@@ -1,0 +1,203 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>My GitHub Projects</title>
+    <style>
+        /* CSS Variables for easy color theme changes */
+        :root {
+            --bg-color: #f4f4f9;
+            --text-color: #24292e;
+            --card-bg: #ffffff;
+            --primary-color: #0366d6;
+            --secondary-text: #586069;
+            --border-color: #e1e4e8;
+        }
+
+        body {
+            font-family: -apple-system, BlinkMacSystemFont, "Segoe UI", Helvetica, Arial, sans-serif;
+            background-color: var(--bg-color);
+            color: var(--text-color);
+            margin: 0;
+            padding: 0;
+            line-height: 1.6;
+        }
+
+        header {
+            background-color: var(--text-color);
+            color: #ffffff;
+            padding: 3rem 1rem;
+            text-align: center;
+        }
+
+        header h1 {
+            margin: 0;
+            font-size: 2.5rem;
+            letter-spacing: -0.5px;
+        }
+
+        header p {
+            margin: 0.5rem 0 0 0;
+            color: #b3b3b3;
+            font-size: 1.1rem;
+        }
+
+        .container {
+            max-width: 1000px;
+            margin: 3rem auto;
+            padding: 0 1.5rem;
+        }
+
+        /* Responsive Grid System */
+        #projects-grid {
+            display: grid;
+            grid-template-columns: repeat(auto-fill, minmax(300px, 1fr));
+            gap: 1.5rem;
+        }
+
+        /* Project Card Styling */
+        .project-card {
+            background-color: var(--card-bg);
+            border: 1px solid var(--border-color);
+            border-radius: 8px;
+            padding: 1.5rem;
+            transition: transform 0.2s ease, box-shadow 0.2s ease;
+            display: flex;
+            flex-direction: column;
+        }
+
+        .project-card:hover {
+            transform: translateY(-4px);
+            box-shadow: 0 8px 24px rgba(149, 157, 165, 0.2);
+        }
+
+        .project-card h3 {
+            margin-top: 0;
+            margin-bottom: 0.5rem;
+            font-size: 1.25rem;
+        }
+
+        .project-card a {
+            color: var(--primary-color);
+            text-decoration: none;
+            font-weight: 600;
+        }
+
+        .project-card a:hover {
+            text-decoration: underline;
+        }
+
+        .project-card p {
+            font-size: 0.95rem;
+            color: var(--secondary-text);
+            flex-grow: 1; /* Pushes the stats bar to the bottom */
+            margin-bottom: 1.5rem;
+        }
+
+        /* GitHub Stats Bar */
+        .stats {
+            display: flex;
+            gap: 1.2rem;
+            font-size: 0.85rem;
+            color: var(--secondary-text);
+            border-top: 1px solid var(--border-color);
+            padding-top: 1rem;
+        }
+        
+        .stats span {
+            display: flex;
+            align-items: center;
+            gap: 0.3rem;
+        }
+
+        .message {
+            text-align: center;
+            grid-column: 1 / -1;
+            color: var(--secondary-text);
+            font-size: 1.1rem;
+        }
+
+        .error {
+            color: #cb2431;
+        }
+    </style>
+</head>
+<body>
+
+    <header>
+        <h1>My Open Source Portfolio</h1>
+        <p>A collection of my projects, experiments, and contributions.</p>
+    </header>
+
+    <div class="container">
+        <div id="projects-grid">
+            <p class="message" id="loading-msg">Fetching repositories from GitHub...</p>
+        </div>
+    </div>
+
+    <script>
+        // --- CONFIGURATION ---
+        const GITHUB_USERNAME = 'gabriel-droidel'; 
+        
+        async function fetchGitHubProjects() {
+            const grid = document.getElementById('projects-grid');
+            
+            try {
+                // Fetch public repositories sorted by recently updated
+                const response = await fetch(`https://api.github.com/users/${GITHUB_USERNAME}/repos?sort=updated&direction=desc`);
+                
+                if (!response.ok) {
+                    throw new Error('Failed to fetch projects');
+                }
+
+                const repos = await response.json();
+                
+                // Clear the loading message
+                grid.innerHTML = '';
+
+                const originalRepos = repos.filter(repo => !repo.fork && repo.name !== 'projects');
+
+                if (originalRepos.length === 0) {
+                    grid.innerHTML = `<p class="message">No public repositories found for user ${GITHUB_USERNAME}.</p>`;
+                    return;
+                }
+
+                // Generate HTML for each repository
+                originalRepos.forEach(repo => {
+                    const card = document.createElement('div');
+                    card.className = 'project-card';
+                    
+                    const description = repo.description ? repo.description : 'No description provided.';
+                    const language = repo.language ? repo.language : 'N/A';
+
+                    card.innerHTML = `
+                        <h3>
+                            <svg aria-hidden="true" height="16" viewBox="0 0 16 16" version="1.1" width="16" style="fill: currentColor; margin-right: 5px;">
+                                <path fill-rule="evenodd" d="M2 2.5A2.5 2.5 0 014.5 0h8.75a.75.75 0 01.75.75v12.5a.75.75 0 01-.75.75h-2.5a.75.75 0 110-1.5h1.75v-2h-8a1 1 0 00-.714 1.7.75.75 0 01-1.072 1.05A2.495 2.495 0 012 11.5v-9zm10.5-1V9h-8c-.356 0-.694.074-1 .208V2.5a1 1 0 011-1h8zM5 12.25v3.25a.25.25 0 00.4.2l1.45-1.087a.249.249 0 01.3 0L8.6 15.7a.25.25 0 00.4-.2v-3.25a.25.25 0 00-.25-.25h-3.5a.25.25 0 00-.25.25z"></path>
+                            </svg>
+                            <a href="${repo.html_url}" target="_blank" rel="noopener noreferrer">${repo.name}</a>
+                        </h3>
+                        <p>${description}</p>
+                        <div class="stats">
+                            <span>⭐ ${repo.stargazers_count}</span>
+                            <span>🍴 ${repo.forks_count}</span>
+                            <span>💻 ${language}</span>
+                        </div>
+                    `;
+                    
+                    grid.appendChild(card);
+                });
+
+            } catch (error) {
+                console.error('Error fetching data:', error);
+                grid.innerHTML = `<p class="message error">Unable to load projects at this time. Please verify the GitHub username.</p>`;
+            }
+        }
+
+        // Run the fetch function once the HTML document has fully loaded
+        document.addEventListener('DOMContentLoaded', fetchGitHubProjects);
+    </script>
+
+</body>
+</html>
